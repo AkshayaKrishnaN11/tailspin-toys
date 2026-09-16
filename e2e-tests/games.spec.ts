@@ -24,6 +24,32 @@ test.describe('Game Listing and Navigation', () => {
     });
   });
 
+  test('should filter games by category and publisher combination', async ({ page }) => {
+    await test.step('Select the category and publisher filters', async () => {
+      await page.goto('/');
+      await page.getByLabel('Filter by Strategy').check();
+      await page.getByTestId('publisher-filter').selectOption({ label: 'CodeForge Studios' });
+      await page.getByTestId('apply-filters-button').click();
+    });
+
+    await test.step('Verify the homepage shows only matching games', async () => {
+      await expect(page).toHaveURL(/\?category=\d+&publisher=\d+/);
+
+      const visibleCardCount = await page.locator('[data-testid="game-card"]').evaluateAll((cards) => {
+        return cards.filter((card) => window.getComputedStyle(card).display !== 'none').length;
+      });
+
+      expect(visibleCardCount).toBe(1);
+
+      const visibleCardLabel = await page.locator('[data-testid="game-card"]').evaluateAll((cards) => {
+        const visibleCard = cards.find((card) => window.getComputedStyle(card).display !== 'none');
+        return visibleCard?.querySelector('[data-testid="game-title"]')?.textContent ?? '';
+      });
+
+      expect(visibleCardLabel).toContain('DevOps Dominion');
+    });
+  });
+
   test('should navigate to correct game details page when clicking on a game', async ({ page }) => {
     let gameId: string | null;
     let gameTitle: string | null;
